@@ -1,1 +1,162 @@
-coooono asi "anglobot.github.io" es mas corto... que buen idea me la ia
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Spinning Box</title>
+    <style>
+        :root {
+            /* Variables for easy resizing */
+            --box-size: 150px;
+            --anim-speed: 4s;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #222;
+            font-family: sans-serif;
+            color: white;
+            overflow: hidden; /* Prevent scrollbars during rotation */
+        }
+
+        /* The Scene Container - provides depth */
+        .scene {
+            width: var(--box-size);
+            height: var(--box-size);
+            perspective: 800px; /* Determines how "3D" it looks */
+            margin-bottom: 50px;
+            position: relative;
+        }
+
+        /* The Cube Object */
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d; /* Crucial: allows children to exist in 3D space */
+            transform: rotateX(-20deg); /* Tilt camera slightly down to see floor/top */
+            animation: spin var(--anim-speed) infinite linear;
+        }
+
+        /* Generic Face Styling */
+        .face {
+            position: absolute;
+            width: var(--box-size);
+            height: var(--box-size);
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            color: #333;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+            backface-visibility: visible; /* Ensure we see the back of the face */
+        }
+
+        /* POSITIONING THE FACES 
+           We rotate them and then push them out by half the width 
+        */
+        .front  { transform: rotateY(0deg) translateZ(calc(var(--box-size) / 2)); }
+        .back   { transform: rotateY(180deg) translateZ(calc(var(--box-size) / 2)); }
+        .right  { transform: rotateY(90deg) translateZ(calc(var(--box-size) / 2)); }
+        .left   { transform: rotateY(-90deg) translateZ(calc(var(--box-size) / 2)); }
+        .top    { transform: rotateX(90deg) translateZ(calc(var(--box-size) / 2)); }
+        .bottom { transform: rotateX(-90deg) translateZ(calc(var(--box-size) / 2)); }
+
+        /* The Floor Shadow */
+        .floor {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0) 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotateX(90deg) translateZ(calc(var(--box-size) / 1.5 * -1));
+            z-index: -1; /* Put it behind the cube */
+        }
+
+        /* Controls Interface */
+        .controls {
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        button {
+            padding: 10px 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: transform 0.1s;
+        }
+        
+        button:active { transform: scale(0.95); }
+        #btn-stop { background-color: #ff5f5f; color: white; }
+        #btn-start { background-color: #5fff87; color: #222; }
+
+        /* The Spinning Animation */
+        @keyframes spin {
+            from { transform: rotateX(-20deg) rotateY(0deg); }
+            to   { transform: rotateX(-20deg) rotateY(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scene">
+        <div class="cube" id="js-cube">
+            <div class="face front">1</div>
+            <div class="face back">2</div>
+            <div class="face right">3</div>
+            <div class="face left">4</div>
+            <div class="face top">5</div>
+            <div class="face bottom">6</div>
+        </div>
+        <div class="floor"></div>
+    </div>
+
+    <div class="controls">
+        <button id="btn-stop">Stop</button>
+        <button id="btn-start">Start</button>
+    </div>
+
+    <script>
+        // 1. Select the elements
+        const cube = document.getElementById('js-cube');
+        const stopBtn = document.getElementById('btn-stop');
+        const startBtn = document.getElementById('btn-start');
+
+        // 2. Add Event Listeners
+        stopBtn.addEventListener('click', () => {
+            // Pause the CSS animation
+            cube.style.animationPlayState = 'paused';
+        });
+
+        startBtn.addEventListener('click', () => {
+            // Resume the CSS animation
+            cube.style.animationPlayState = 'running';
+        });
+
+        // Optional: Log which side is clicked (demonstrating future interaction)
+        const faces = document.querySelectorAll('.face');
+        faces.forEach(face => {
+            face.addEventListener('click', (e) => {
+                // If the animation is paused, let's alert the number
+                if(window.getComputedStyle(cube).animationPlayState === 'paused') {
+                    alert(`You clicked side number: ${e.target.innerText}`);
+                } else {
+                    console.log("Pause the animation to interact with a number!");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
