@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Interactive Cube</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        /* Custom Scrollbar for aesthetics */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Container -->
+    <div id="canvas-container" class="absolute inset-0 z-0"></div>
+
+    <!-- UI: Glassmorphism Control Panel -->
+    <div class="absolute top-4 left-4 z-10 w-72 rounded-xl border border-white/20 bg-white/10 p-5 backdrop-blur-md shadow-2xl text-white transition-all duration-300 hover:bg-white/15">
+        <h1 class="mb-4 text-xl font-bold tracking-wider border-b border-white/20 pb-2">Cube Controller</h1>
+
+        <!-- Section 1: Motor Control -->
+        <div class="mb-6">
+            <h2 class="text-xs uppercase text-blue-300 font-semibold mb-2 tracking-widest">Motor</h2>
+            <div class="flex gap-2">
+                <button id="btn-stop" class="flex-1 bg-red-500/20 hover:bg-red-500/40 text-red-200 border border-red-500/50 py-2 rounded-lg transition-colors font-medium text-sm">
+                    STOP
+                </button>
+                <button id="btn-spin" class="flex-1 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-200 border border-emerald-500/50 py-2 rounded-lg transition-colors font-medium text-sm">
+                    SPIN
+                </button>
+            </div>
+        </div>
+
+        <!-- Section 2: Visibility Control -->
+        <div>
+            <h2 class="text-xs uppercase text-blue-300 font-semibold mb-2 tracking-widest">Face Visibility</h2>
+            <div class="grid grid-cols-3 gap-2" id="visibility-grid">
+                <!-- Buttons injected via JS -->
+            </div>
+        </div>
+        
+        <div class="mt-4 text-[10px] text-gray-400 text-center">
+            Left Click to Rotate &bull; Right Click to Pan &bull; Scroll to Zoom
+        </div>
+    </div>
+
+    <!-- Import Map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Configuration ---
+        const CONFIG = {
+            bgColor: 0x1a1a1a,
+            cubeSize: 2,
+            colors: {
+                face: '#3b82f6', // Tailwind blue-500
+                text: '#ffffff',
+                border: '#ffffff'
+            }
+        };
+
+        // --- State ---
+        const state = {
+            isSpinning: true,
+            faces: [true, true, true, true, true, true] // Visibility of numbers 1-6
+        };
+
+        // --- Scene Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(CONFIG.bgColor);
+        // Add some fog for depth
+        scene.fog = new THREE.Fog(CONFIG.bgColor, 5, 20);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(5, 4, 5);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(5, 10, 7);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        // --- Helpers ---
+        const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+        scene.add(gridHelper);
+
+        // --- Texture Generation ---
+        function createFaceTexture(number, isVisible) {
+            const size = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Background
+            ctx.fillStyle = CONFIG.colors.face;
+            ctx.fillRect(0, 0, size, size);
+
+            // Border
+            ctx.strokeStyle = CONFIG.colors.border;
+            ctx.lineWidth = 30;
+            ctx.strokeRect(0, 0, size, size);
+
+            // Text (Number)
+            if (isVisible) {
+                ctx.fillStyle = CONFIG.colors.text;
+                ctx.font = 'bold 300px Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // Center of canvas
+                ctx.fillText(number, size / 2, size / 2 + 20); // +20 for visual alignment
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            return texture;
+        }
+
+        // --- Cube Creation ---
+        const geometry = new THREE.BoxGeometry(CONFIG.cubeSize, CONFIG.cubeSize, CONFIG.cubeSize);
+        
+        // Generate initial materials for 6 faces
+        // Three.js BoxGeometry face order: Right, Left, Top, Bottom, Front, Back
+        const materials = state.faces.map((isVisible, index) => {
+            return new THREE.MeshStandardMaterial({
+                map: createFaceTexture(index + 1, isVisible),
+                roughness: 0.2,
+                metalness: 0.1
+            });
+        });
+
+        const cube = new THREE.Mesh(geometry, materials);
+        cube.position.y = CONFIG.cubeSize / 2 + 0.5; // Float slightly above grid
+        cube.castShadow = true;
+        cube.receiveShadow = true;
+        scene.add(cube);
+
+        // --- UI Interaction Logic ---
+
+        // 1. Motor Controls
+        const btnStop = document.getElementById('btn-stop');
+        const btnSpin = document.getElementById('btn-spin');
+
+        function updateMotorUI() {
+            if(state.isSpinning) {
+                btnSpin.classList.add('ring-2', 'ring-emerald-400');
+                btnStop.classList.remove('ring-2', 'ring-red-400');
+            } else {
+                btnStop.classList.add('ring-2', 'ring-red-400');
+                btnSpin.classList.remove('ring-2', 'ring-emerald-400');
+            }
+        }
+
+        btnStop.addEventListener('click', () => {
+            state.isSpinning = false;
+            updateMotorUI();
+        });
+
+        btnSpin.addEventListener('click', () => {
+            state.isSpinning = true;
+            updateMotorUI();
+        });
+        updateMotorUI(); // Init state
+
+        // 2. Visibility Controls
+        const gridContainer = document.getElementById('visibility-grid');
+
+        state.faces.forEach((isVisible, index) => {
+            const btn = document.createElement('button');
+            const num = index + 1;
+            btn.textContent = num;
+            btn.className = `
+                h-10 rounded-md border border-blue-500/30 font-bold transition-all duration-200
+                ${isVisible ? 'bg-blue-500 text-white shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-transparent text-gray-400'}
+            `;
+            
+            btn.addEventListener('click', () => {
+                // Toggle State
+                state.faces[index] = !state.faces[index];
+                const currentlyVisible = state.faces[index];
+
+                // Update Button UI
+                if (currentlyVisible) {
+                    btn.className = 'h-10 rounded-md border border-blue-500/30 font-bold transition-all duration-200 bg-blue-500 text-white shadow-[0_0_10px_rgba(59,130,246,0.5)]';
+                } else {
+                    btn.className = 'h-10 rounded-md border border-blue-500/30 font-bold transition-all duration-200 bg-transparent text-gray-400';
+                }
+
+                // Update 3D Texture
+                // Dispose old texture to prevent memory leaks
+                const oldTexture = cube.material[index].map;
+                if(oldTexture) oldTexture.dispose();
+
+                // Assign new texture
+                cube.material[index].map = createFaceTexture(num, currentlyVisible);
+                cube.material[index].needsUpdate = true;
+            });
+
+            gridContainer.appendChild(btn);
+        });
+
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+
+            if (state.isSpinning) {
+                cube.rotation.x += 0.5 * delta;
+                cube.rotation.y += 1.0 * delta;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // --- Resize Handler ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start
+        animate();
+
+    </script>
+</body>
+</html>
