@@ -1,124 +1,83 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Schulte Table – Voice Adjacent (Left/Right)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Schulte Table – Voice Adjacent (Optimized)</title>
 <style>
   :root{
     --bg:#0b0f1a; --card:#11162a; --accent:#5af; --text:#eaf2ff;
-    --muted:#9db3d9; --good:#4ae36b; --bad:#ff6b6b; --grid:#1a2342;
+    --good:#4ae36b; --bad:#ff6b6b;
   }
   html,body{height:100%;}
   body{
-    margin:0; background:radial-gradient(1200px 600px at 70% 20%, #0e1730, var(--bg));
-    color:var(--text); font-family:system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-    display:flex; align-items:center; justify-content:center; padding:24px;
+    margin:0; padding:24px; display:flex; align-items:center; justify-content:center;
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 70% 20%, #0e1730, var(--bg));
+    color:var(--text);
   }
-  .app{ width:min(980px,100%); display:grid; grid-template-columns: 1.1fr 1fr; gap:20px; }
-  @media (max-width:900px){ .app{ grid-template-columns: 1fr; } }
+  .app{ width:min(980px,100%); display:grid; grid-template-columns:1.1fr 1fr; gap:20px; }
+  @media (max-width:900px){ .app{ grid-template-columns:1fr; } }
 
   .panel{
     background:linear-gradient(180deg, rgba(26,35,66,.9), rgba(12,18,34,.9));
-    border:1px solid #263056; border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,.45);
-    padding:16px 18px;
+    border:1px solid #263056; border-radius:16px; padding:16px; box-shadow:0 12px 36px rgba(0,0,0,.45);
   }
+  .header{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px; }
+  .title{ font-weight:700; font-size:1.05rem; color:#dbe7ff; }
+  .status{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .chip{ background:#0f1731; border:1px solid #233056; padding:8px 12px; border-radius:999px; font-size:.92rem; }
+  .controls{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
 
-  .header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
-  .title{ font-weight:700; letter-spacing:.2px; font-size:1.05rem; color:#dbe7ff; }
-  .status{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
-  .chip{
-    background:#0f1731; border:1px solid #233056; color:#cfe0ff;
-    padding:8px 12px; border-radius:999px; font-size:.92rem; display:flex; gap:8px; align-items:center;
-  }
-  .chip strong{ color:#fff; font-weight:700; }
-
-  .controls{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-  button{
-    all:unset; display:inline-flex; align-items:center; justify-content:center;
-    padding:10px 14px; border-radius:10px; cursor:pointer; user-select:none;
-    font-weight:650; letter-spacing:.2px;
-  }
-  .btn{ background:linear-gradient(180deg, #1f2a52, #162047); border:1px solid #2c3b6d; color:#dff0ff; }
-  .btn:hover{ filter:brightness(1.08); }
-  .btn:active{ transform:translateY(1px); }
-  .btn-danger{ background:linear-gradient(180deg, #3b1c26, #2a0f15); border:1px solid #6b2031; color:#ffd8df; }
-  .btn-primary{ background:linear-gradient(180deg, #2a4b8c, #1c3566); border:1px solid #3e66c2; color:#eaf2ff; }
-
-  .grid{
-    display:grid; grid-template-columns: repeat(6, 1fr); gap:8px; margin-top:10px;
-  }
-  .cell{
-    aspect-ratio:1 / 1;
-    background:linear-gradient(180deg, #0e142a, #0b1326);
-    border:1px solid #2a3766; border-radius:12px;
-    display:flex; align-items:center; justify-content:center;
-    font-size:1.35rem; color:#eaf2ff; font-weight:760;
-    box-shadow: inset 0 0 0 2px rgba(90, 170, 255, .06);
-    position:relative;
-    will-change: transform;
-  }
-
-  /* Lightweight feedback animations (no heavy reflows) */
-  .pulse-ok{ animation: pulseOk .28s ease-out; }
-  .pulse-bad{ animation: pulseBad .28s ease-out; }
-  @keyframes pulseOk{
-    0%{ transform:scale(1); box-shadow: inset 0 0 0 2px rgba(74,227,107,.22); }
-    50%{ transform:scale(1.06); box-shadow: 0 0 0 6px rgba(74,227,107,.25); }
-    100%{ transform:scale(1); box-shadow: inset 0 0 0 2px rgba(90, 170, 255, .06); }
-  }
-  @keyframes pulseBad{
-    0%{ transform:scale(1); box-shadow: inset 0 0 0 2px rgba(255,107,107,.22); }
-    50%{ transform:scale(0.96); box-shadow: 0 0 0 6px rgba(255,107,107,.25); }
-    100%{ transform:scale(1); box-shadow: inset 0 0 0 2px rgba(90, 170, 255, .06); }
-  }
-
-  .log{
-    height:180px; overflow:auto; padding:10px; border:1px solid #25325a; border-radius:12px;
-    background:#0e152d; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  }
-  .log p{ margin:0; padding:6px 0; border-bottom:1px dashed #1e2748; }
-  .log p:last-child{ border-bottom:0; }
-  .log .ok{ color:#6df29b; }
-  .log .err{ color:#ff9393; }
-  .log .info{ color:#9bd0ff; }
-
-  .flash{
-    position:fixed; inset:0; pointer-events:none; display:none; place-items:center;
-    background:radial-gradient(900px 600px at 50% 40%, rgba(60,120,255,.2), rgba(0,0,0,.7));
-    z-index:999;
-  }
-  .flash.show{ display:grid; }
-  .flash-content{ text-align:center; animation: pop 600ms ease-out; }
-  @keyframes pop{
-    0%{ transform:scale(.6); opacity:0; filter:brightness(1.6) saturate(1.4); }
-    100%{ transform:scale(1); opacity:1; }
-  }
-  .flash h1{
-    font-size:clamp(2.2rem, 6vw, 4rem); margin:0 0 8px; background:linear-gradient(90deg, #6bd9ff, #a7ff9b);
-    -webkit-background-clip:text; background-clip:text; color:transparent; font-weight:900; letter-spacing:.6px;
-    text-shadow: 0 0 28px rgba(90,170,255,.45);
-  }
-  .flash .sub{ color:#eaf2ff; font-size:clamp(1rem, 3vw, 1.4rem); }
-  .confetti{ position:absolute; inset:0; overflow:hidden; }
-  .piece{
-    position:absolute; width:10px; height:18px; border-radius:2px; opacity:.9;
-    animation: fall 2200ms linear forwards;
-  }
-  @keyframes fall{
-    0%{ transform:translateY(-10vh) rotate(0deg); }
-    100%{ transform:translateY(110vh) rotate(540deg); }
-  }
+  button{ all:unset; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:650; display:inline-flex; align-items:center; justify-content:center; }
+  .btn{ background:linear-gradient(180deg,#1f2a52,#162047); border:1px solid #2c3b6d; color:#dff0ff; }
+  .btn-primary{ background:linear-gradient(180deg,#2a4b8c,#1c3566); border:1px solid #3e66c2; color:#eaf2ff; }
+  .btn-danger{ background:linear-gradient(180deg,#3b1c26,#2a0f15); border:1px solid #6b2031; color:#ffd8df; }
 
   .hint{ margin-top:8px; color:#adc5ec; font-size:.92rem; }
-  .footnote{ margin-top:8px; color:#8097bf; font-size:.86rem; }
+  .grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-top:12px; }
+  .cell{
+    aspect-ratio:1/1; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg,#0e142a,#0b1326); border-radius:12px; border:1px solid #2a3766;
+    color:var(--text); font-weight:760; font-size:1.25rem; user-select:none; will-change:transform,box-shadow;
+  }
+
+  /* Lightweight pulses for feedback */
+  .pulse-ok{ animation:pulseOk .28s ease-out; }
+  .pulse-bad{ animation:pulseBad .28s ease-out; }
+  @keyframes pulseOk{
+    0%{ transform:scale(1); box-shadow:inset 0 0 0 2px rgba(90,170,255,.06); }
+    50%{ transform:scale(1.06); box-shadow:0 0 0 6px rgba(74,227,107,.25); }
+    100%{ transform:scale(1); box-shadow:inset 0 0 0 2px rgba(90,170,255,.06); }
+  }
+  @keyframes pulseBad{
+    0%{ transform:scale(1); box-shadow:inset 0 0 0 2px rgba(90,170,255,.06); }
+    50%{ transform:scale(0.96); box-shadow:0 0 0 6px rgba(255,107,107,.25); }
+    100%{ transform:scale(1); box-shadow:inset 0 0 0 2px rgba(90,170,255,.06); }
+  }
+
+  .log{ height:180px; overflow:auto; padding:10px; border-radius:12px; border:1px solid #25325a; background:#0e152d; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .log p{ margin:0; padding:6px 0; border-bottom:1px dashed #1e2748; }
+  .log p:last-child{ border-bottom:0; }
+  .ok{ color:#6df29b; } .err{ color:#ff9393; } .info{ color:#9bd0ff; }
+
+  .flash{ position:fixed; inset:0; display:none; place-items:center; pointer-events:none; z-index:999; background:radial-gradient(900px 600px at 50% 40%, rgba(60,120,255,.12), rgba(0,0,0,.65)); }
+  .flash.show{ display:grid; }
+  .flash h1{ font-size:clamp(2.2rem,6vw,4rem); margin:0; font-weight:900; background:linear-gradient(90deg,#6bd9ff,#a7ff9b); -webkit-background-clip:text; background-clip:text; color:transparent; text-shadow:0 0 28px rgba(90,170,255,.45); }
+  .flash .sub{ color:#eaf2ff; margin-top:8px; }
+
+  .confetti{ position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+  .piece{ position:absolute; width:10px; height:18px; border-radius:2px; opacity:.95; animation:fall 2200ms linear forwards; }
+  @keyframes fall{ 0%{ transform:translateY(-10vh) rotate(0deg);} 100%{ transform:translateY(110vh) rotate(540deg);} }
+
+  .small{ font-size:.9rem; color:#9db3d9; }
 </style>
 </head>
 <body>
-  <main class="app">
+  <main class="app" aria-live="polite">
     <section class="panel">
       <div class="header">
-        <div class="title">Schulte Table – Voice Adjacent</div>
+        <div class="title">Schulte Table – Voice Adjacent (Optimized)</div>
         <div class="status">
           <div class="chip"><strong>Target:</strong> <span id="targetChip">1</span></div>
           <div class="chip"><strong>Elapsed:</strong> <span id="timer">00:00.0</span></div>
@@ -132,16 +91,11 @@
         <button id="btnStop" class="btn-danger">Stop app</button>
       </div>
 
-      <div class="hint">
-        Speak: “X right” if the target number is immediately to the right of X, or “X left” if it’s immediately to the left of X. Only horizontal adjacency counts.
-      </div>
+      <div class="hint">Speak “X right” or “X left” (only horizontal adjacency counts). Speak naturally; app reacts quickly.</div>
 
-      <!-- Grid: no coordinate badges, no cell highlighting -->
-      <div id="grid" class="grid" aria-label="Schulte table 6 by 6"></div>
+      <div id="grid" class="grid" role="grid" aria-label="Schulte table 6 by 6"></div>
 
-      <div class="footnote">
-        Example: if a row shows “… 33 1 …” say “33 right” to identify 1. If “… 2 19 …” and target is 2, say “19 left”.
-      </div>
+      <div style="margin-top:10px" class="small">Example: in row “… 33 1 …” say “33 right” to identify 1; no coordinates shown and next cell is not highlighted.</div>
     </section>
 
     <section class="panel">
@@ -152,14 +106,14 @@
 
   <div id="flash" class="flash" role="dialog" aria-modal="true" aria-label="Congratulations">
     <div class="confetti" aria-hidden="true"></div>
-    <div class="flash-content">
+    <div style="text-align:center" class="flash-content">
       <h1>Brilliant run!</h1>
       <div class="sub">You reached 36 in <span id="finalTime">00:00.0</span></div>
     </div>
   </div>
 
 <script>
-/* ============ State ============ */
+/* ========= State ========= */
 const gridEl = document.getElementById('grid');
 const targetChip = document.getElementById('targetChip');
 const timerEl = document.getElementById('timer');
@@ -171,75 +125,82 @@ const btnStop = document.getElementById('btnStop');
 const flashEl = document.getElementById('flash');
 const finalTimeEl = document.getElementById('finalTime');
 
-let cells = [];              // [{n, row, col, el}]
-let mapNumToPos = new Map(); // n -> {row,col,el}
+let cells = [];                // {n,row,col,el}
+let mapNumToPos = new Map();   // n -> {row,col,el}
 let target = 1;
+
 let startedAt = null;
 let timerTick = null;
 
+/* Recognition + VAD state */
 let recognition = null;
 let recognizing = false;
+let vadStream = null;
+let vadAnalyzer = null;
+let vadTimer = null;
 
-/* ============ Performance helpers ============ */
-function shuffle(arr){
-  for(let i=arr.length-1; i>0; i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function mmssms(deltaMs){
-  const ms = Math.floor(deltaMs % 1000 / 100);
-  const s = Math.floor(deltaMs / 1000) % 60;
-  const m = Math.floor(deltaMs / 60000);
-  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms}`;
-}
-
-/* Buffered log to reduce DOM churn */
+/* Buffered log for batching DOM writes */
 let logBuffer = [];
 const MAX_LOG_LINES = 30;
-function logBuffered(line, cls='info'){
-  logBuffer.push({ line, cls });
-}
+function logBuffered(line, cls='info'){ logBuffer.push({line,cls}); }
 function flushLog(){
   if (!logBuffer.length) return;
   const frag = document.createDocumentFragment();
-  for(const {line, cls} of logBuffer){
+  for(const {line,cls} of logBuffer){
     const p = document.createElement('p');
     p.className = cls;
     p.textContent = line;
     frag.appendChild(p);
   }
   logEl.appendChild(frag);
-  // Trim log size
-  while (logEl.childElementCount > MAX_LOG_LINES){
-    logEl.removeChild(logEl.firstElementChild);
-  }
+  while (logEl.childElementCount > MAX_LOG_LINES) logEl.removeChild(logEl.firstElementChild);
   logEl.scrollTop = logEl.scrollHeight;
   logBuffer = [];
 }
-setInterval(flushLog, 200);
+setInterval(flushLog, 180);
 
-/* Mic indicator */
+/* ========= Utilities ========= */
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+function mmssms(deltaMs){
+  const ms = Math.floor(deltaMs % 1000 / 100);
+  const s = Math.floor(deltaMs / 1000) % 60;
+  const m = Math.floor(deltaMs / 60000);
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms}`;
+}
 function setMicState(text){ micStateEl.textContent = text; }
 
-/* ============ Grid (no coordinates, no highlighting) ============ */
+/* Lightweight pulse feedback without heavy layout work */
+function pulse(el, ok){
+  if (!el) return;
+  el.classList.add(ok ? 'pulse-ok' : 'pulse-bad');
+  const onEnd = ()=>{
+    el.classList.remove(ok ? 'pulse-ok' : 'pulse-bad');
+    el.removeEventListener('animationend', onEnd);
+  };
+  el.addEventListener('animationend', onEnd);
+}
+
+/* ========= Grid build (no coords, no highlight) ========= */
 function buildGrid(){
-  const frag = document.createDocumentFragment();
   gridEl.innerHTML = '';
   cells = [];
   mapNumToPos.clear();
-
   const nums = shuffle([...Array(36)].map((_,i)=>i+1));
-  for(let r=0; r<6; r++){
-    for(let c=0; c<6; c++){
+  const frag = document.createDocumentFragment();
+  for(let r=0;r<6;r++){
+    for(let c=0;c<6;c++){
       const n = nums[r*6+c];
       const el = document.createElement('div');
       el.className = 'cell';
-      el.setAttribute('role', 'gridcell');
+      el.setAttribute('role','gridcell');
       el.setAttribute('aria-label', `Number ${n}, row ${r+1}, column ${c+1}`);
-      el.textContent = n; // No coordinate badges
+      el.textContent = n;
       frag.appendChild(el);
       const cell = { n, row:r, col:c, el };
       cells.push(cell);
@@ -249,30 +210,29 @@ function buildGrid(){
   gridEl.appendChild(frag);
 }
 
-/* ============ Timing ============ */
+/* ========= Timer ========= */
 function startTimer(){
   startedAt = performance.now();
   timerEl.textContent = '00:00.0';
   if (timerTick) cancelAnimationFrame(timerTick);
-  const tick = () => {
+  const tick = ()=>{
     if (!startedAt) return;
-    const now = performance.now();
-    timerEl.textContent = mmssms(now - startedAt);
+    timerEl.textContent = mmssms(performance.now() - startedAt);
     timerTick = requestAnimationFrame(tick);
   };
   timerTick = requestAnimationFrame(tick);
 }
 function stopTimer(){
-  const end = startedAt ? performance.now() - startedAt : 0;
+  const elapsed = startedAt ? performance.now() - startedAt : 0;
   if (timerTick) cancelAnimationFrame(timerTick);
   timerTick = null;
   startedAt = null;
-  return end;
+  return elapsed;
 }
 
-/* ============ Speech parsing (cached maps, lightweight) ============ */
+/* ========= Fast speech parsing (cached maps) ========= */
 const numberWords = {
-  'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,
+  'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,
   'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,
   'twenty one':21,'twenty-one':21,'twenty two':22,'twenty-two':22,'twenty three':23,'twenty-three':23,'twenty four':24,'twenty-four':24,
   'twenty five':25,'twenty-five':25,'twenty six':26,'twenty-six':26,'twenty seven':27,'twenty-seven':27,'twenty eight':28,'twenty-eight':28,
@@ -286,18 +246,14 @@ const reDirRight = /\bright\b/;
 const reDirLeft  = /\bleft\b/;
 
 function parseUtterance(s){
-  const raw = s.toLowerCase().trim();
+  const raw = (s||'').toLowerCase().trim();
   const normalized = raw.replace(rePunct,' ').replace(reSpaces,' ').trim();
   let dir = null;
-  if (reDirRight.test(normalized)) dir = 'right';
-  else if (reDirLeft.test(normalized)) dir = 'left';
-
-  // Try numeric first
+  if (reDirRight.test(normalized)) dir='right';
+  else if (reDirLeft.test(normalized)) dir='left';
   const numMatch = normalized.match(/\b(\d{1,2})\b/);
-  let num = numMatch ? parseInt(numMatch[1], 10) : null;
-
-  // Fallback to word mapping
-  if (num == null){
+  let num = numMatch ? parseInt(numMatch[1],10) : null;
+  if (num==null){
     for(const w of numberWordKeys){
       if (normalized.includes(w)){ num = numberWords[w]; break; }
     }
@@ -305,98 +261,22 @@ function parseUtterance(s){
   return { num, dir, raw };
 }
 
-/* ============ Speech recognition ============ */
-function initRecognition(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR){
-    logBuffered('Speech recognition not supported in this browser.', 'err');
-    setMicState('unsupported');
-    return null;
-  }
-  const r = new SR();
-  r.lang = 'en-US';            // set to 'es-CO' if you prefer Spanish
-  r.continuous = true;
-  r.interimResults = false;
-  r.maxAlternatives = 1;
-
-  r.onstart = () => { recognizing = true; setMicState('on'); logBuffered('Mic listening…', 'info'); };
-  r.onend   = () => {
-    // Auto-restart if user hasn't explicitly stopped
-    if (recognizing) {
-      try{ r.start(); }catch(_){}
-    } else {
-      setMicState('off');
-    }
-  };
-  r.onerror = (e) => { logBuffered(`Mic error: ${e.error}`, 'err'); };
-
-  r.onresult = (ev) => {
-    // Process only final results; minimal work per event
-    for (let i = ev.resultIndex; i < ev.results.length; i++){
-      if (!ev.results[i].isFinal) continue;
-      handleCommand(ev.results[i][0].transcript);
-    }
-  };
-  return r;
-}
-
-/* ============ Game logic ============ */
+/* ========= Adjacency check (only horizontal) ========= */
 function isAdjacentCorrect(adjNum, dir){
   const t = mapNumToPos.get(target);
   const a = mapNumToPos.get(adjNum);
   if (!t || !a) return false;
-  if (t.row !== a.row) return false; // only horizontal adjacency
-  if (dir === 'right'){
-    return a.col === t.col - 1; // target is right of adj
-  } else if (dir === 'left'){
-    return a.col === t.col + 1; // target is left of adj
-  }
+  if (t.row !== a.row) return false;
+  if (dir === 'right') return a.col === t.col - 1;
+  if (dir === 'left') return a.col === t.col + 1;
   return false;
 }
 
-function pulse(el, ok){
-  el.classList.add(ok ? 'pulse-ok' : 'pulse-bad');
-  el.addEventListener('animationend', function handler(){
-    el.classList.remove(ok ? 'pulse-ok' : 'pulse-bad');
-    el.removeEventListener('animationend', handler);
-  });
-}
-
-function handleCommand(phrase){
-  const { num, dir, raw } = parseUtterance(phrase);
-
-  if (num == null || (dir !== 'left' && dir !== 'right')){
-    logBuffered(`Heard: “${raw}” → please say “X left” or “X right”`, 'err');
-    const t = mapNumToPos.get(target);
-    if (t) pulse(t.el, false);
-    return;
-  }
-
-  const adjCell = mapNumToPos.get(num);
-  if (adjCell) pulse(adjCell.el, true);
-
-  if (isAdjacentCorrect(num, dir)){
-    logBuffered(`✓ Target ${target}: “${num} ${dir}” is correct`, 'ok');
-    target++;
-    targetChip.textContent = target > 36 ? '—' : String(target);
-    if (target > 36){
-      const elapsed = stopTimer();
-      finalTimeEl.textContent = mmssms(elapsed);
-      celebrate();
-      stopMic(true);
-    }
-  } else {
-    logBuffered(`✗ “${num} ${dir}” does not match target ${target}`, 'err');
-    const t = mapNumToPos.get(target);
-    if (t) pulse(t.el, false);
-  }
-}
-
-/* ============ Celebrate ============ */
+/* ========= Celebration ========= */
 function celebrate(){
   flashEl.classList.add('show');
-  spawnConfetti(120);
-  setTimeout(()=> flashEl.classList.remove('show'), 3500);
+  spawnConfetti(110);
+  setTimeout(()=> flashEl.classList.remove('show'), 3200);
 }
 function spawnConfetti(count){
   const container = flashEl.querySelector('.confetti');
@@ -414,24 +294,170 @@ function spawnConfetti(count){
   }
 }
 
-/* ============ Mic control ============ */
-function startMic(){
-  if (!recognition){
-    recognition = initRecognition();
-    if (!recognition) return;
-  }
-  recognizing = true;
-  try{ recognition.start(); }catch(_){}
+/* ========= VAD + Recognizer (integrated, optimized) ========= */
+/* VAD settings: tweak sensitivity if needed */
+const VAD_THRESHOLD = 0.02;    // lower = more sensitive
+const VAD_SILENCE_MS = 700;   // stop recognition after this ms of silence
+let GRAMMAR = null;
+
+function buildGrammar(){
+  const nums = Array.from({length:36}, (_,i)=>String(i+1)).join(' | ');
+  return `#JSGF V1.0; grammar numbers; public <cmd> = ( ${nums} ) ( left | right );`;
 }
-function stopMic(explicit=false){
-  // explicit true means user clicked Stop; prevent auto-restart
-  recognizing = !explicit && recognizing;
-  if (recognition){
-    try{ recognition.stop(); }catch(_){}
+GRAMMAR = buildGrammar();
+
+function initVAD(){
+  if (vadStream) return;
+  navigator.mediaDevices.getUserMedia({ audio:true, video:false })
+    .then(stream=>{
+      vadStream = stream;
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 1024;
+      src.connect(analyser);
+      vadAnalyzer = { analyser, ctx };
+      sampleVAD();
+    })
+    .catch(err=>{
+      console.warn('VAD init failed', err);
+    });
+}
+
+function stopVAD(){
+  try{
+    if (vadStream){ vadStream.getTracks().forEach(t=>t.stop()); vadStream = null; }
+    if (vadAnalyzer && vadAnalyzer.ctx){ try{ vadAnalyzer.ctx.close(); }catch(_){} vadAnalyzer = null; }
+    if (vadTimer){ clearTimeout(vadTimer); vadTimer=null; }
+  }catch(_){}
+}
+
+function sampleVAD(){
+  if (!vadAnalyzer) return;
+  const arr = new Uint8Array(vadAnalyzer.analyser.fftSize/2);
+  vadAnalyzer.analyser.getByteTimeDomainData(arr);
+  let sum=0;
+  for(let i=0;i<arr.length;i++){ const v=(arr[i]-128)/128; sum+=v*v; }
+  const rms = Math.sqrt(sum/arr.length);
+  if (rms > VAD_THRESHOLD){
+    startRecognitionIfReady();
+    if (vadTimer){ clearTimeout(vadTimer); vadTimer=null; }
+    requestAnimationFrame(sampleVAD);
+  } else {
+    if (recognizing && !vadTimer){
+      vadTimer = setTimeout(()=>{ stopRecognition(); vadTimer=null; }, VAD_SILENCE_MS);
+    }
+    setTimeout(sampleVAD, 180);
   }
 }
 
-/* ============ App control ============ */
+/* Initialize the SpeechRecognition instance (fast, minimal work on result) */
+function initRecognition(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR){
+    logBuffered('Speech recognition not supported in this browser.', 'err');
+    setMicState('unsupported');
+    return null;
+  }
+  const r = new SR();
+  r.lang = 'en-US';           // change to 'es-CO' for Spanish
+  r.continuous = true;
+  r.interimResults = true;    // faster perceived responsiveness
+  r.maxAlternatives = 1;
+
+  try {
+    const SGL = window.SpeechGrammarList || window.webkitSpeechGrammarList;
+    if (SGL){
+      const sg = new SGL();
+      sg.addFromString(GRAMMAR, 1.0);
+      r.grammars = sg;
+    }
+  } catch(e){ /* ignore */ }
+
+  r.onstart = ()=>{ recognizing = true; setMicState('on'); logBuffered('Mic listening…', 'info'); };
+  r.onend = ()=>{ recognizing = false; setMicState('off'); /* VAD will restart when voice resumes */ };
+  r.onerror = (ev)=>{ if (ev.error && ev.error !== 'no-speech') logBuffered(`Mic error: ${ev.error}`, 'err'); };
+
+  r.onresult = (ev)=>{
+    // Only handle the newest result for speed
+    const lastIndex = ev.results.length - 1;
+    const result = ev.results[lastIndex];
+    if (!result) return;
+    const transcript = (result[0] && result[0].transcript) ? result[0].transcript.trim() : '';
+    if (!result.isFinal) {
+      // skip DOM updates for interim transcripts to avoid churn
+      return;
+    }
+    // Defer heavier work to next animation frame for UI smoothness
+    requestAnimationFrame(()=> handleCommand(transcript));
+  };
+
+  return r;
+}
+
+function startRecognitionIfReady(){
+  if (!recognition) recognition = initRecognition();
+  if (!recognition) return;
+  if (recognizing) return;
+  try { recognition.start(); } catch(e){
+    // some browsers throw if start called too quickly; retry shortly
+    setTimeout(()=>{ try{ recognition.start(); }catch(_){} }, 120);
+  }
+}
+function stopRecognition(){
+  if (recognition && recognizing){
+    try{ recognition.stop(); } catch(_) {}
+  }
+  recognizing = false;
+  setMicState('off');
+}
+
+/* Public mic controls */
+function startMic(){
+  initVAD();
+  startRecognitionIfReady();
+  setMicState('starting');
+}
+function stopMic(explicit=false){
+  if (explicit){
+    stopRecognition();
+    stopVAD();
+  } else {
+    stopRecognition();
+  }
+}
+
+/* ========= Command handling (minimal work) ========= */
+function handleCommand(phrase){
+  const { num, dir, raw } = parseUtterance(phrase);
+  if (num == null || (dir !== 'left' && dir !== 'right')){
+    logBuffered(`Heard: “${raw}” → say “X left” or “X right”`, 'err');
+    const t = mapNumToPos.get(target);
+    if (t) pulse(t.el, false);
+    return;
+  }
+
+  const adjCell = mapNumToPos.get(num);
+  if (adjCell) pulse(adjCell.el, true);
+
+  if (isAdjacentCorrect(num, dir)){
+    logBuffered(`✓ Target ${target}: “${num} ${dir}” correct`, 'ok');
+    target++;
+    targetChip.textContent = target > 36 ? '—' : String(target);
+    if (target > 36){
+      const elapsed = stopTimer();
+      finalTimeEl.textContent = mmssms(elapsed);
+      celebrate();
+      stopMic(true);
+    }
+  } else {
+    logBuffered(`✗ “${num} ${dir}” does not match target ${target}`, 'err');
+    const t = mapNumToPos.get(target);
+    if (t) pulse(t.el, false);
+  }
+}
+
+/* ========= App controls ========= */
 function resetGame(){
   stopMic(true);
   stopTimer();
@@ -442,51 +468,21 @@ function resetGame(){
   buildGrid();
   startTimer();
 }
-
 btnNew.addEventListener('click', resetGame);
-btnMic.addEventListener('click', startMic);
+btnMic.addEventListener('click', ()=> startMic());
 btnStop.addEventListener('click', ()=>{
   stopMic(true);
   const elapsed = stopTimer();
-  if (elapsed>0){
-    logBuffered(`Stopped at target ${target} after ${mmssms(elapsed)}`, 'info');
-  }
+  if (elapsed > 0) logBuffered(`Stopped at target ${target} after ${mmssms(elapsed)}`, 'info');
 });
 
+/* pause recognition when tab hidden (conserves CPU) */
 document.addEventListener('visibilitychange', ()=>{
   if (document.hidden) stopMic(true);
 });
 
-/* ============ Init ============ */
+/* ========= Init ========= */
 resetGame();
-
-/* ============ Optional Spanish support (Valledupar) ============
-   If you want to accept “izquierda/derecha” and Spanish numbers, set recognition.lang='es-CO'
-   and replace parseUtterance with parseUtteranceES in handleCommand.
-*/
-function parseUtteranceES(s){
-  const raw = s.toLowerCase().trim();
-  const normalized = raw.replace(rePunct,' ').replace(reSpaces,' ').trim();
-  let dir = null;
-  if (/\bderecha\b/.test(normalized)) dir = 'right';
-  else if (/\bizquierda\b/.test(normalized)) dir = 'left';
-  const numMatch = normalized.match(/\b(\d{1,2})\b/);
-  let num = numMatch ? parseInt(numMatch[1], 10) : null;
-  const esMap = {
-    'uno':1,'dos':2,'tres':3,'cuatro':4,'cinco':5,'seis':6,'siete':7,'ocho':8,'nueve':9,'diez':10,
-    'once':11,'doce':12,'trece':13,'catorce':14,'quince':15,'dieciseis':16,'dieciséis':16,'diecisiete':17,'dieciocho':18,'diecinueve':19,
-    'veinte':20,'veintiuno':21,'veintidos':22,'veintidós':22,'veintitres':23,'veintitrés':23,'veinticuatro':24,'veinticinco':25,'veintiseis':26,'veintiséis':26,
-    'veintisiete':27,'veintiocho':28,'veintinueve':29,'treinta':30,'treinta y uno':31,'treinta y dos':32,'treinta y tres':33,'treinta y cuatro':34,'treinta y cinco':35,'treinta y seis':36
-  };
-  if (num == null){
-    const keys = Object.keys(esMap).sort((a,b)=>b.length-a.length);
-    for(const k of keys){ if (normalized.includes(k)){ num = esMap[k]; break; } }
-  }
-  return { num, dir, raw: s };
-}
-// To enable Spanish parsing:
-// 1) recognition.lang = 'es-CO' in initRecognition()
-// 2) replace in handleCommand(): const {num,dir,raw} = parseUtteranceES(phrase);
 
 </script>
 </body>
