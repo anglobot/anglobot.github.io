@@ -3,521 +3,115 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Schulte Table – Voice Adjacent (Left/Right)</title>
+<title>Schulte Table – Voice Adjacent</title>
 <style>
-  :root{
-    --bg:#0b0f1a;
-    --card:#11162a;
-    --accent:#5af;
-    --accent2:#f55;
-    --text:#eaf2ff;
-    --muted:#9db3d9;
-    --good:#4ae36b;
-    --bad:#ff6b6b;
-    --grid:#1a2342;
-  }
-  html,body{height:100%;}
   body{
-    margin:0; background:radial-gradient(1200px 600px at 70% 20%, #0e1730, var(--bg));
-    color:var(--text); font-family:system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    margin:0; background:#0b0f1a; color:#eaf2ff;
+    font-family:system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     display:flex; align-items:center; justify-content:center; padding:24px;
   }
-  .app{
-    width:min(980px, 100%);
-    display:grid; grid-template-columns: 1.1fr 1fr; gap:20px;
-  }
-  @media (max-width: 900px){ .app{ grid-template-columns: 1fr; } }
+  .app{width:min(980px,100%); display:grid; grid-template-columns:1.1fr 1fr; gap:20px;}
+  @media(max-width:900px){.app{grid-template-columns:1fr;}}
 
-  .panel{
-    background:linear-gradient(180deg, rgba(26,35,66,.9), rgba(12,18,34,.9));
-    border:1px solid #263056; border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,.45);
-    padding:16px 18px;
-  }
+  .panel{background:#11162a; border-radius:16px; padding:16px 18px;}
+  .header{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .title{font-weight:700; font-size:1.05rem;}
+  .status{display:flex; gap:12px; flex-wrap:wrap;}
+  .chip{background:#0f1731; border-radius:999px; padding:8px 12px; font-size:.92rem;}
+  .chip strong{color:#fff;}
 
-  .header{
-    display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;
-  }
-  .title{
-    font-weight:700; letter-spacing:.2px; font-size:1.05rem; color:#dbe7ff;
-  }
+  .controls{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  button{all:unset; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:650;}
+  .btn{background:#1f2a52; color:#dff0ff;}
+  .btn-danger{background:#3b1c26; color:#ffd8df;}
+  .btn-primary{background:#2a4b8c; color:#eaf2ff;}
 
-  .status{
-    display:flex; gap:12px; flex-wrap:wrap; align-items:center;
-  }
-  .chip{
-    background:#0f1731; border:1px solid #233056; color:#cfe0ff;
-    padding:8px 12px; border-radius:999px; font-size:.92rem; display:flex; gap:8px; align-items:center;
-  }
-  .chip strong{color:#fff; font-weight:700;}
-
-  .controls{
-    display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;
-  }
-  button{
-    all:unset; display:inline-flex; align-items:center; justify-content:center;
-    padding:10px 14px; border-radius:10px; cursor:pointer; user-select:none;
-    font-weight:650; letter-spacing:.2px;
-  }
-  .btn{
-    background:linear-gradient(180deg, #1f2a52, #162047);
-    border:1px solid #2c3b6d; color:#dff0ff;
-  }
-  .btn:hover{ filter:brightness(1.08); }
-  .btn:active{ transform:translateY(1px); }
-  .btn-danger{
-    background:linear-gradient(180deg, #3b1c26, #2a0f15);
-    border:1px solid #6b2031; color:#ffd8df;
-  }
-  .btn-primary{
-    background:linear-gradient(180deg, #2a4b8c, #1c3566);
-    border:1px solid #3e66c2; color:#eaf2ff;
-  }
-
-  .grid{
-    display:grid; grid-template-columns: repeat(6, 1fr); gap:8px; margin-top:10px;
-  }
+  .grid{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-top:10px;}
   .cell{
-    aspect-ratio:1 / 1;
-    background:linear-gradient(180deg, #0e142a, #0b1326);
-    border:1px solid #2a3766; border-radius:12px;
+    aspect-ratio:1/1; background:#0e142a; border-radius:12px;
     display:flex; align-items:center; justify-content:center;
-    font-size:1.35rem; color:#eaf2ff; font-weight:760;
-    box-shadow: inset 0 0 0 2px rgba(90, 170, 255, .06);
-    position:relative;
+    font-size:1.35rem; font-weight:760;
   }
-  .cell .badge{
-    position:absolute; top:7px; left:8px; font-size:.72rem; color:#9db3d9; font-weight:650;
-    background:#101a36; border:1px solid #25325a; border-radius:6px; padding:2px 6px;
-  }
-  .cell.target{ outline:2px solid var(--accent); box-shadow: 0 0 0 4px rgba(90,170,255,.25); }
-  .cell.adj-ok{ outline:2px solid var(--good); box-shadow: 0 0 0 4px rgba(74,227,107,.22); }
-  .cell.adj-bad{ outline:2px solid var(--bad); box-shadow: 0 0 0 4px rgba(255,107,107,.22); }
+  .cell.adj-ok{outline:2px solid #4ae36b;}
+  .cell.adj-bad{outline:2px solid #ff6b6b;}
 
-  .log{
-    height:180px; overflow:auto; padding:10px; border:1px solid #25325a; border-radius:12px;
-    background:#0e152d; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  }
-  .log p{ margin:0; padding:6px 0; border-bottom:1px dashed #1e2748; }
-  .log p:last-child{ border-bottom:0; }
-  .log .ok{ color:#6df29b; }
-  .log .err{ color:#ff9393; }
-  .log .info{ color:#9bd0ff; }
+  .log{height:180px; overflow:auto; padding:10px; background:#0e152d; border-radius:12px;}
+  .log p{margin:0; padding:6px 0; border-bottom:1px dashed #1e2748;}
+  .log p:last-child{border-bottom:0;}
+  .log .ok{color:#6df29b;}
+  .log .err{color:#ff9393;}
+  .log .info{color:#9bd0ff;}
 
-  .flash{
-    position:fixed; inset:0; pointer-events:none; display:none; place-items:center;
-    background:radial-gradient(900px 600px at 50% 40%, rgba(60,120,255,.2), rgba(0,0,0,.7));
-    z-index:999;
-  }
-  .flash.show{ display:grid; }
-  .flash-content{
-    text-align:center; animation: pop 600ms ease-out;
-  }
-  @keyframes pop{
-    0%{ transform:scale(.6); opacity:0; filter:brightness(1.6) saturate(1.4); }
-    100%{ transform:scale(1); opacity:1; }
-  }
-  .flash h1{
-    font-size:clamp(2.2rem, 6vw, 4rem); margin:0 0 8px; background:linear-gradient(90deg, #6bd9ff, #a7ff9b);
-    -webkit-background-clip:text; background-clip:text; color:transparent; font-weight:900; letter-spacing:.6px;
-    text-shadow: 0 0 28px rgba(90,170,255,.45);
-  }
-  .flash .sub{
-    color:#eaf2ff; font-size:clamp(1rem, 3vw, 1.4rem);
-  }
-  .confetti{ position:absolute; inset:0; overflow:hidden; }
-  .piece{
-    position:absolute; width:10px; height:18px; border-radius:2px; opacity:.9;
-    animation: fall 2200ms linear forwards;
-  }
-  @keyframes fall{
-    0%{ transform:translateY(-10vh) rotate(0deg); }
-    100%{ transform:translateY(110vh) rotate(540deg); }
-  }
-
-  .hint{
-    margin-top:8px; color:#adc5ec; font-size:.92rem;
-  }
-  .footnote{
-    margin-top:8px; color:#8097bf; font-size:.86rem;
-  }
+  .flash{position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.7);}
+  .flash.show{display:grid;}
+  .flash h1{font-size:3rem; color:#6bd9ff; font-weight:900;}
 </style>
 </head>
 <body>
-  <main class="app">
-    <section class="panel">
-      <div class="header">
-        <div class="title">Schulte Table – Voice Adjacent</div>
-        <div class="status">
-          <div class="chip"><strong>Target:</strong> <span id="targetChip">1</span></div>
-          <div class="chip"><strong>Elapsed:</strong> <span id="timer">00:00.0</span></div>
-          <div class="chip"><strong>Mic:</strong> <span id="micState">off</span></div>
-        </div>
+<main class="app">
+  <section class="panel">
+    <div class="header">
+      <div class="title">Schulte Table – Voice Adjacent</div>
+      <div class="status">
+        <div class="chip"><strong>Target:</strong> <span id="targetChip">1</span></div>
+        <div class="chip"><strong>Elapsed:</strong> <span id="timer">00:00.0</span></div>
+        <div class="chip"><strong>Mic:</strong> <span id="micState">off</span></div>
       </div>
-      <div class="controls">
-        <button id="btnNew" class="btn">Shuffle grid</button>
-        <button id="btnMic" class="btn-primary">Turn on mic</button>
-        <button id="btnStop" class="btn-danger">Stop app</button>
-      </div>
-      <div class="hint">
-        Speak: “<em>X right</em>” if the target number is immediately to the right of X, or “<em>X left</em>” if it’s immediately to the left of X. Only horizontal adjacency counts.
-      </div>
-      <div id="grid" class="grid" aria-label="Schulte table 6 by 6"></div>
-      <div class="footnote">
-        Example: if row shows “… 33 1 …” say “33 right” to identify 1. If “… 2 19 …” and target is 2, say “19 left”.
-      </div>
-    </section>
-
-    <section class="panel">
-      <div class="title">Voice log</div>
-      <div id="log" class="log" aria-live="polite" aria-atomic="false"></div>
-    </section>
-  </main>
-
-  <div id="flash" class="flash" role="dialog" aria-modal="true" aria-label="Congratulations">
-    <div class="confetti" aria-hidden="true"></div>
-    <div class="flash-content">
-      <h1>Brilliant run!</h1>
-      <div class="sub">You reached 36 in <span id="finalTime">00:00.0</span></div>
     </div>
-  </div>
+    <div class="controls">
+      <button id="btnNew" class="btn">Shuffle grid</button>
+      <button id="btnMic" class="btn-primary">Turn on mic</button>
+      <button id="btnStop" class="btn-danger">Stop app</button>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+  <section class="panel">
+    <div class="title">Voice log</div>
+    <div id="log" class="log"></div>
+  </section>
+</main>
+<div id="flash" class="flash"><h1>Congratulations!</h1></div>
 
 <script>
-/* ============ State ============ */
-const gridEl = document.getElementById('grid');
-const targetChip = document.getElementById('targetChip');
-const timerEl = document.getElementById('timer');
-const micStateEl = document.getElementById('micState');
-const logEl = document.getElementById('log');
-const btnNew = document.getElementById('btnNew');
-const btnMic = document.getElementById('btnMic');
-const btnStop = document.getElementById('btnStop');
-const flashEl = document.getElementById('flash');
-const finalTimeEl = document.getElementById('finalTime');
+const gridEl=document.getElementById('grid');
+const targetChip=document.getElementById('targetChip');
+const timerEl=document.getElementById('timer');
+const micStateEl=document.getElementById('micState');
+const logEl=document.getElementById('log');
+const btnNew=document.getElementById('btnNew');
+const btnMic=document.getElementById('btnMic');
+const btnStop=document.getElementById('btnStop');
+const flashEl=document.getElementById('flash');
 
-let cells = [];              // [{n, row, col, el}]
-let mapNumToPos = new Map(); // n -> {row,col,el}
-let target = 1;
-let startedAt = null;
-let timerTick = null;
+let cells=[],mapNumToPos=new Map(),target=1,startedAt=null,timerTick=null;
+let recognition=null,recognizing=false;
 
-let recognition = null;
-let recognizing = false;
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+function mmssms(deltaMs){const ms=Math.floor(deltaMs%1000/100);const s=Math.floor(deltaMs/1000)%60;const m=Math.floor(deltaMs/60000);return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms}`;}
+function log(line,cls='info'){const p=document.createElement('p');p.className=cls;p.textContent=line;logEl.appendChild(p);logEl.scrollTop=logEl.scrollHeight;}
 
-/* ============ Helpers ============ */
-function shuffle(arr){
-  for(let i=arr.length-1; i>0; i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function mmssms(deltaMs){
-  const ms = Math.floor(deltaMs % 1000 / 100);
-  const s = Math.floor(deltaMs / 1000) % 60;
-  const m = Math.floor(deltaMs / 60000);
-  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${ms}`;
-}
-
-function log(line, cls='info'){
-  const p = document.createElement('p');
-  p.className = cls;
-  p.textContent = line;
-  logEl.appendChild(p);
-  logEl.scrollTop = logEl.scrollHeight;
-}
-
-function clearLog(){ logEl.innerHTML = ''; }
-
-function setMicState(text){ micStateEl.textContent = text; }
-
-/* ============ Grid ============ */
 function buildGrid(){
-  gridEl.innerHTML = '';
-  cells = [];
-  mapNumToPos.clear();
-
-  const nums = shuffle([...Array(36)].map((_,i)=>i+1));
-  for(let r=0; r<6; r++){
-    for(let c=0; c<6; c++){
-      const n = nums[r*6+c];
-      const el = document.createElement('div');
-      el.className = 'cell';
-      el.setAttribute('role', 'gridcell');
-      el.setAttribute('aria-label', `Number ${n}, row ${r+1}, column ${c+1}`);
-      el.innerHTML = `<span class="badge">${r+1}-${c+1}</span>${n}`;
-      gridEl.appendChild(el);
-      const cell = { n, row:r, col:c, el };
-      cells.push(cell);
-      mapNumToPos.set(n, cell);
-    }
-  }
-  highlightTarget();
+  gridEl.innerHTML='';cells=[];mapNumToPos.clear();
+  const nums=shuffle([...Array(36)].map((_,i)=>i+1));
+  for(let r=0;r<6;r++){for(let c=0;c<6;c++){
+    const n=nums[r*6+c];
+    const el=document.createElement('div');el.className='cell';el.textContent=n;
+    gridEl.appendChild(el);
+    const cell={n,row:r,col:c,el};cells.push(cell);mapNumToPos.set(n,cell);
+  }}
 }
 
-function highlightTarget(){
-  cells.forEach(({el}) => el.classList.remove('target','adj-ok','adj-bad'));
-  const t = mapNumToPos.get(target);
-  if (t) t.el.classList.add('target');
-}
+function startTimer(){startedAt=performance.now();if(timerTick)cancelAnimationFrame(timerTick);
+  const tick=()=>{if(!startedAt)return;timerEl.textContent=mmssms(performance.now()-startedAt);timerTick=requestAnimationFrame(tick);};
+  timerTick=requestAnimationFrame(tick);}
+function stopTimer(){const end=startedAt?performance.now()-startedAt:0;if(timerTick)cancelAnimationFrame(timerTick);timerTick=null;startedAt=null;return end;}
 
-/* ============ Timing ============ */
-function startTimer(){
-  startedAt = performance.now();
-  timerEl.textContent = '00:00.0';
-  if (timerTick) cancelAnimationFrame(timerTick);
-  const tick = () => {
-    if (!startedAt) return;
-    const now = performance.now();
-    timerEl.textContent = mmssms(now - startedAt);
-    timerTick = requestAnimationFrame(tick);
-  };
-  timerTick = requestAnimationFrame(tick);
-}
+const numberWords={'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'twenty one':21,'twenty two':22,'twenty three':23,'twenty four':24,'twenty five':25,'twenty six':26,'twenty seven':27,'twenty eight':28,'twenty nine':29,'thirty':30,'thirty one':31,'thirty two':32,'thirty three':33,'thirty four':34,'thirty five':35,'thirty six':36};
+function parseUtterance(s){const raw=s.toLowerCase().trim();let dir=null;if(/\bright\b/.test(raw))dir='right';else if(/\bleft\b/.test(raw))dir='left';let num=null;const numMatch=raw.match(/\b(\d{1,2})\b/);if(numMatch)num=parseInt(numMatch[1],10);else{for(const w in numberWords){if(raw.includes(w)){num=numberWords[w];break;}}}return{num,dir,raw};}
 
-function stopTimer(){
-  const end = startedAt ? performance.now() - startedAt : 0;
-  if (timerTick) cancelAnimationFrame(timerTick);
-  timerTick = null;
-  startedAt = null;
-  return end;
-}
-
-/* ============ Speech ============ */
-const numberWords = {
-  'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,
-  'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,
-  'twenty one':21,'twenty-one':21,'twenty two':22,'twenty-two':22,'twenty three':23,'twenty-three':23,'twenty four':24,'twenty-four':24,
-  'twenty five':25,'twenty-five':25,'twenty six':26,'twenty-six':26,'twenty seven':27,'twenty-seven':27,'twenty eight':28,'twenty-eight':28,
-  'twenty nine':29,'twenty-nine':29,'thirty':30,'thirty one':31,'thirty-one':31,'thirty two':32,'thirty-two':32,'thirty three':33,'thirty-three':33,
-  'thirty four':34,'thirty-four':34,'thirty five':35,'thirty-five':35,'thirty six':36,'thirty-six':36
-};
-
-function parseUtterance(s){
-  const raw = s.toLowerCase().trim();
-  // Normalize punctuation
-  const normalized = raw.replace(/[.,;:!?]/g,' ').replace(/\s+/g,' ').trim();
-
-  // Extract direction
-  let dir = null;
-  if (/\bright\b/.test(normalized)) dir = 'right';
-  else if (/\bleft\b/.test(normalized)) dir = 'left';
-
-  // Remove known filler words
-  let text = normalized.replace(/\b(is|es|the|la|el|to|a|at|on)\b/g, ' ').replace(/\s+/g,' ').trim();
-
-  // Try numeric first
-  let numMatch = text.match(/\b(\d{1,2})\b/);
-  let num = numMatch ? parseInt(numMatch[1], 10) : null;
-
-  // If not numeric, try word mapping (including hyphenated)
-  if (num == null){
-    // Try longest matches first
-    const candidates = Object.keys(numberWords).sort((a,b)=>b.length-a.length);
-    for(const w of candidates){
-      if (text.includes(w)){
-        num = numberWords[w];
-        break;
-      }
-    }
-  }
-
-  return { num, dir, raw };
-}
-
-function initRecognition(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR){
-    log('Speech recognition not supported in this browser.', 'err');
-    setMicState('unsupported');
-    return null;
-  }
-  const r = new SR();
-  r.lang = 'en-US'; // You can change to 'es-ES' if preferred
-  r.continuous = true;
-  r.interimResults = false;
-  r.maxAlternatives = 1;
-
-  r.onstart = () => { recognizing = true; setMicState('on'); log('Mic listening…', 'info'); };
-  r.onend   = () => { recognizing = false; setMicState('off'); };
-  r.onerror = (e) => { log(`Mic error: ${e.error}`, 'err'); };
-
-  r.onresult = (ev) => {
-    for (let i = ev.resultIndex; i < ev.results.length; i++){
-      if (!ev.results[i].isFinal) continue;
-      const transcript = ev.results[i][0].transcript;
-      handleCommand(transcript);
-    }
-  };
-
-  return r;
-}
-
-/* ============ Game logic ============ */
-function isAdjacentCorrect(adjNum, dir){
-  const t = mapNumToPos.get(target);
-  const a = mapNumToPos.get(adjNum);
-  if (!t || !a) return false;
-  // Only horizontal adjacency allowed
-  if (t.row !== a.row) return false;
-  if (dir === 'right'){
-    // target is right of adj => adj.col === target.col - 1
-    return a.col === t.col - 1;
-  } else if (dir === 'left'){
-    // target is left of adj => adj.col === target.col + 1
-    return a.col === t.col + 1;
-  }
-  return false;
-}
-
-function pulse(el, cls){
-  el.classList.add(cls);
-  setTimeout(()=>el.classList.remove(cls), 500);
-}
-
-function handleCommand(phrase){
-  const { num, dir, raw } = parseUtterance(phrase);
-  if (num == null || (dir !== 'left' && dir !== 'right')){
-    log(`Heard: “${raw}” → please say “X left” or “X right”`, 'err');
-    const t = mapNumToPos.get(target);
-    if (t) pulse(t.el, 'adj-bad');
-    return;
-  }
-
-  // Feedback pulse on the adjacent cell if it exists
-  const adjCell = mapNumToPos.get(num);
-  if (adjCell) pulse(adjCell.el, 'adj-ok');
-
-  if (isAdjacentCorrect(num, dir)){
-    log(`✓ Target ${target}: “${num} ${dir}” is correct`, 'ok');
-    target++;
-    targetChip.textContent = target > 36 ? '—' : String(target);
-    if (target <= 36){
-      highlightTarget();
-    } else {
-      // Success
-      const elapsed = stopTimer();
-      finalTimeEl.textContent = mmssms(elapsed);
-      celebrate();
-      stopMic();
-    }
-  } else {
-    log(`✗ “${num} ${dir}” does not match target ${target}`, 'err');
-    const t = mapNumToPos.get(target);
-    if (t) pulse(t.el, 'adj-bad');
-  }
-}
-
-/* ============ Celebrate ============ */
-function celebrate(){
-  flashEl.classList.add('show');
-  spawnConfetti(120);
-  setTimeout(()=> flashEl.classList.remove('show'), 3500);
-}
-
-function spawnConfetti(count){
-  const container = flashEl.querySelector('.confetti');
-  container.innerHTML = '';
-  const colors = ['#6bd9ff','#a7ff9b','#ffd56b','#ff6ba6','#b88cff','#6bffdf'];
-  for(let i=0;i<count;i++){
-    const piece = document.createElement('div');
-    piece.className='piece';
-    piece.style.left = Math.random()*100+'%';
-    piece.style.background = colors[i % colors.length];
-    piece.style.transform = `translateY(-10vh) rotate(${Math.random()*120}deg)`;
-    piece.style.animationDelay = (Math.random()*800)+'ms';
-    piece.style.filter = `hue-rotate(${Math.random()*120}deg)`;
-    container.appendChild(piece);
-  }
-}
-
-/* ============ Mic control ============ */
-function startMic(){
-  if (!recognition){
-    recognition = initRecognition();
-    if (!recognition) return;
-  }
-  if (!recognizing){
-    try{
-      recognition.start();
-    }catch(_){}
-  }
-}
-
-function stopMic(){
-  if (recognition && recognizing){
-    try{
-      recognition.stop();
-    }catch(_){}
-  }
-}
-
-/* ============ App control ============ */
-function resetGame(){
-  stopMic();
-  stopTimer();
-  clearLog();
-  target = 1;
-  targetChip.textContent = '1';
-  buildGrid();
-  highlightTarget();
-  startTimer();
-}
-
-btnNew.addEventListener('click', resetGame);
-btnMic.addEventListener('click', startMic);
-btnStop.addEventListener('click', ()=>{
-  stopMic();
-  const elapsed = stopTimer();
-  if (elapsed>0){
-    log(`Stopped at target ${target} after ${mmssms(elapsed)}`, 'info');
-  }
-});
-
-document.addEventListener('visibilitychange', ()=>{
-  if (document.hidden) stopMic();
-});
-
-/* ============ Init ============ */
-resetGame();
-
-/* ============ Optional: Spanish language tweak ============
-   If you want to use Spanish (Valledupar), set recognition.lang = 'es-CO'
-   and allow “izquierda/derecha”. Minimal support below:
-*/
-function setLanguage(spanish=false){
-  if (!recognition) return;
-  if (spanish){
-    recognition.lang = 'es-CO';
-  }else{
-    recognition.lang = 'en-US';
-  }
-}
-// Accept “izquierda/derecha” too
-function parseUtteranceES(s){
-  const out = parseUtterance(s);
-  const raw = s.toLowerCase();
-  if (!out.dir){
-    if (/\bderecha\b/.test(raw)) out.dir = 'right';
-    else if (/\bizquierda\b/.test(raw)) out.dir = 'left';
-  }
-  // Spanish numerals (basic 1–36)
-  const esMap = {
-    'uno':1,'dos':2,'tres':3,'cuatro':4,'cinco':5,'seis':6,'siete':7,'ocho':8,'nueve':9,'diez':10,
-    'once':11,'doce':12,'trece':13,'catorce':14,'quince':15,'dieciseis':16,'dieciséis':16,'diecisiete':17,'dieciocho':18,'diecinueve':19,
-    'veinte':20,'veintiuno':21,'veintidos':22,'veintidós':22,'veintitres':23,'veintitrés':23,'veinticuatro':24,'veinticinco':25,'veintiseis':26,'veintiséis':26,
-    'veintisiete':27,'veintiocho':28,'veintinueve':29,'treinta':30,'treinta y uno':31,'treinta y dos':32,'treinta y tres':33,'treinta y cuatro':34,'treinta y cinco':35,'treinta y seis':36
-  };
-  if (out.num == null){
-    const keys = Object.keys(esMap).sort((a,b)=>b.length-a.length);
-    for(const k of keys){
-      if (raw.includes(k)){ out.num = esMap[k]; break; }
-    }
-  }
-  return out;
-}
-// To enable Spanish parsing, replace handleCommand with:
-// function handleCommand(phrase){ const parsed = parseUtteranceES(phrase); const {num,dir,raw} = parsed; ... }
-</script>
-</body>
-</html>
+function initRecognition(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){log('Speech recognition not supported','err');return null;}
+  const r=new SR();r.lang='en-US';r.continuous=true;r.interimResults=false;
+  r.onstart=()=>{recognizing=true;micStateEl.textContent='on';log('Mic listening…');};
+  r.onend=()=>{recognizing=false;micStateEl.textContent='off';};
+  r.onerror=e=>log(`Mic error: ${e.error}`,'err');
+  r.onresult=ev=>{for(let i=ev.resultIndex;i<ev.results.length;i++){if(!ev.results[i].isFinal)continue;handleCommand(ev.results[i][0].transcript);}}
