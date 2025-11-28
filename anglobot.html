@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Physics World with Comprehensive Voice Control</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Three.js for 3D environment -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Load Cannon.js for Physics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+    <!-- Load OrbitControls for camera control -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            width: 100vw;
+            background: #111;
+        }
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; 
+        }
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            padding: 16px;
+            width: 100%;
+            pointer-events: none; /* Allows mouse clicks to pass through to the canvas */
+        }
+        #top-ui {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+        #command-controls {
+            pointer-events: auto; /* Re-enables pointer events for the controls */
+            background-color: rgba(30, 41, 59, 0.95); /* slate-800 with transparency */
+            border-radius: 0.75rem;
+            padding: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+        /* Voice Input Styles */
+        .mic-icon {
+            transition: color 0.3s, transform 0.3s;
+        }
+        .listening .mic-icon {
+            color: #ef4444; /* Red color when listening */
+            animation: pulse-mic 1s infinite;
+        }
+        @keyframes pulse-mic {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. CANVAS CONTAINER -->
+    <div id="canvas-container"></div>
+
+    <!-- 2. UI OVERLAY -->
+    <div id="ui-overlay">
+        <div id="top-ui">
+            <!-- LEFT: Command Input and Q&A -->
+            <div id="command-controls" class="space-y-3">
+                <h1 class="text-xl font-bold text-white">AI Command Center</h1>
+                <div class="flex space-x-2">
+                    <!-- Text Input -->
+                    <input
+                        type="text"
+                        id="command-input"
+                        class="flex-grow p-2 bg-gray-700/80 text-white border border-gray-600 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-150 text-sm"
+                        placeholder="Type or Speak command/question..."
+                        autocomplete="off"
+                    />
+                    
+                    <!-- Microphone Button -->
+                    <div id="mic-and-execute-group" class="flex space-x-1 justify-end items-center transition duration-300 rounded-lg border-4 border-transparent p-0.5">
+                        <button
+                            id="speech-button"
+                            title="Start Voice Command"
+                            class="flex-shrink-0 w-10 h-10 p-1.5 rounded-full shadow-md transition duration-300 ease-in-out bg-purple-600 hover:bg-purple-700 text-white"
+                        >
+                            <!-- Microphone Icon -->
+                            <svg id="mic-svg" class="w-full h-full mic-icon text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m8 0h-4M5 11a7 7 0 017-7 7 7 0 017 7 7 7 0 01-7 7z"></path>
+                            </svg>
+                        </button>
+                        
+                        <!-- Execute Button -->
+                        <button
+                            id="execute-button"
+                            title="Execute Command"
+                            class="flex-shrink-0 w-10 h-10 p-1.5 rounded-full shadow-md transition duration-300 ease-in-out bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            <!-- Play/Run Icon -->
+                            <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Answer/Status Output -->
+                <div id="output-box" class="p-2 min-h-[40px] bg-gray-700/80 text-green-400 rounded-lg text-sm border border-gray-600">
+                    Ready. Speak or type a command/question.
+                </div>
+            </div>
+
+            <!-- RIGHT: Controls and Instructions -->
+            <div class="flex flex-col space-y-2 pointer-events: auto;">
+                <button
+                    id="reset-button"
+                    class="px-4 py-2 bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-700 transition duration-150 text-sm pointer-events-auto"
+                >
+                    Reset Objects
+                </button>
+                <button
+                    id="instructions-button"
+                    class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-150 text-sm pointer-events-auto"
+                >
+                    User Instructions
+                </button>
+                <div id="instructions-box" class="hidden p-3 bg-gray-800/90 text-gray-300 rounded-lg text-xs w-48 pointer-events-auto shadow-lg">
+                    <p class="font-bold mb-1">Commands (Type or Speak):</p>
+                    <ul class="list-disc list-inside space-y-0.5">
+                        <li>`[object] jump`</li>
+                        <li>`[object] go to wall [1-4]`</li>
+                        <li>`[object] stop`</li>
+                        <li>`[object] move to [object]`</li>
+                        <li>`[object] change color`</li>
+                        <li>`[object] get big / get small`</li>
+                        <li>`[object] explode`</li>
+                    </ul>
+                    <p class="font-bold mt-2">Q&A Examples:</p>
+                    <ul class="list-disc list-inside space-y-0.5">
+                        <li>`What color is the cube?`</li>
+                        <li>`Has the ball jumped before?`</li>
+                    </ul>
+                    <p class="font-bold mt-2">Camera Controls:</p>
+                    <p>Click/Drag on floor to rotate. Scroll to zoom.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- GLOBAL CONFIG & API SETUP ---
+        const API_KEY = ""; // Using empty string for Canvas
+        const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${API_KEY}`;
+        
+        // --- GLOBAL SCENE VARIABLES ---
+        let scene, camera, renderer, controls;
+        let world; // Cannon.js world
+        const timeStep = 1 / 60;
+        
+        // --- OBJECTS MAPPING ---
+        // Stores Three.js Mesh, Cannon.js Body, and initial state
+        const objects = {};
+        const objectHistory = {};
+        
+        // Initial positions for reset
+        const initialPositions = {
+            cube: new CANNON.Vec3(-1, 0.5, 0),
+            ball: new CANNON.Vec3(1, 0.5, 0),
+            cylinder: new CANNON.Vec3(0, 0.5, -1),
+        };
+        
+        // Physics constants
+        const JUMP_VELOCITY = 10;
+        const MOVE_IMPULSE = 30;
+        
+        // --- UI ELEMENTS ---
+        const canvasContainer = document.getElementById('canvas-container');
+        const outputBox = document.getElementById('output-box');
+        const commandInput = document.getElementById('command-input');
+        const resetButton = document.getElementById('reset-button');
+        const instructionsButton = document.getElementById('instructions-button');
+        const instructionsBox = document.getElementById('instructions-box');
+        const executeButton = document.getElementById('execute-button');
+
+        // --- SPEECH RECOGNITION ELEMENTS ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const speechButton = document.getElementById('speech-button');
+        const micAndExecuteGroup = document.getElementById('mic-and-execute-group');
+        let recognition = null;
+        let isListening = false;
+
+
+        // --- UTILITY FUNCTIONS ---
+        
+        // Function to display status messages/answers
+        function showOutput(message, type = 'info') {
+            let color = 'text-green-400';
+            let bgColor = 'bg-gray-700/80';
+            
+            if (type === 'error') {
+                color = 'text-red-400';
+            } else if (type === 'command') {
+                color = 'text-yellow-400';
+            }
+
+            outputBox.className = `p-2 min-h-[40px] ${bgColor} ${color} rounded-lg text-sm border border-gray-600`;
+            outputBox.innerHTML = message;
+        }
+
+        // --- COMMAND AND Q&A LOGIC ---
+        
+        // Actions now consistently expect mesh, body, and name (though not all use all three)
+        const actions = {
+            jump: (mesh, body, name) => {
+                body.velocity.y = JUMP_VELOCITY;
+                objects[name].history.push({ action: 'jump', time: Date.now() });
+                showOutput(`Command: ${name} is jumping!`, 'command');
+            },
+            stop: (mesh, body, name) => {
+                body.velocity.set(0, 0, 0);
+                body.angularVelocity.set(0, 0, 0);
+                showOutput(`Command: ${name} is stopping.`, 'command');
+            },
+            // FIX: Only requires the mesh and name for color change
+            "change color": (mesh, body, name) => {
+                const newColor = new THREE.Color(Math.random() * 0xffffff);
+                // Check if mesh and material exist before trying to read color
+                const oldColorHex = mesh.material ? mesh.material.color.getHex() : 'N/A';
+                
+                objects[name].history.push({ action: 'color change', oldValue: oldColorHex, newValue: newColor.getHex(), time: Date.now() });
+                mesh.material.color.set(newColor);
+                showOutput(`Command: ${name} changed color to #${newColor.getHexString()}.`, 'command');
+            },
+            "get big": (mesh, body, name) => {
+                const newScale = objects[name].initialScale * 1.5;
+                mesh.scale.set(newScale, newScale, newScale);
+                
+                // Need to update the physics body shape (This is complex in Cannon, but for this demo, we'll visually resize and use an approximate impulse for effect)
+                body.applyImpulse(new CANNON.Vec3(0, 5, 0), body.position); // Add a small impulse to acknowledge the change
+                
+                objects[name].history.push({ action: 'scale change', oldValue: objects[name].currentScale, newValue: newScale, time: Date.now() });
+                objects[name].currentScale = newScale;
+                showOutput(`Command: ${name} is getting bigger.`, 'command');
+            },
+            "get small": (mesh, body, name) => {
+                const newScale = objects[name].initialScale / 1.5;
+                mesh.scale.set(newScale, newScale, newScale);
+                
+                // Physics approximation: smaller mass/scale
+                body.applyImpulse(new CANNON.Vec3(0, 5, 0), body.position);
+                
+                objects[name].history.push({ action: 'scale change', oldValue: objects[name].currentScale, newValue: newScale, time: Date.now() });
+                objects[name].currentScale = newScale;
+                showOutput(`Command: ${name} is getting smaller.`, 'command');
+            },
+            explode: (mesh, body, name) => {
+                const randomForce = () => (Math.random() - 0.5) * 50;
+                body.applyImpulse(new CANNON.Vec3(randomForce(), 10 + Math.random() * 20, randomForce()), body.position);
+                showOutput(`Command: ${name} exploded (scattered)!`, 'command');
+            },
+            "go to wall 1": (mesh, body, name) => { body.applyImpulse(new CANNON.Vec3(MOVE_IMPULSE, 0, 0), body.position); showOutput(`Command: ${name} moving towards Wall 1.`, 'command'); },
+            "go to wall 2": (mesh, body, name) => { body.applyImpulse(new CANNON.Vec3(-MOVE_IMPULSE, 0, 0), body.position); showOutput(`Command: ${name} moving towards Wall 2.`, 'command'); },
+            "go to wall 3": (mesh, body, name) => { body.applyImpulse(new CANNON.Vec3(0, 0, MOVE_IMPULSE), body.position); showOutput(`Command: ${name} moving towards Wall 3.`, 'command'); },
+            "go to wall 4": (mesh, body, name) => { body.applyImpulse(new CANNON.Vec3(0, 0, -MOVE_IMPULSE), body.position); showOutput(`Command: ${name} moving towards Wall 4.`, 'command'); },
+            // PASS targetObjectName directly to moveToObject. The fourth argument (mesh) passed by the executor is ignored here.
+            "move to cube": (mesh, body, name) => moveToObject(body, name, 'cube'),
+            "move to ball": (mesh, body, name) => moveToObject(body, name, 'ball'),
+            "move to cylinder": (mesh, body, name) => moveToObject(body, name, 'cylinder'),
+        };
+
+        // Corrected signature to receive targetObjectName
+        function moveToObject(sourceBody, sourceName, targetObjectName) {
+            // Use optional chaining for safe lookup and check
+            const targetBody = objects[targetObjectName]?.body;
+            
+            if (!targetBody) {
+                showOutput(`Error: Target object '${targetObjectName}' does not exist.`, 'error');
+                return;
+            }
+
+            const direction = new CANNON.Vec3();
+            targetBody.position.vsub(sourceBody.position, direction);
+            direction.normalize();
+            
+            const impulse = direction.scale(MOVE_IMPULSE * 1.5);
+            sourceBody.applyImpulse(impulse, sourceBody.position);
+            showOutput(`Command: ${sourceName} is moving towards ${targetObjectName}.`, 'command');
+        }
+
+        // --- GEMINI API CALL FOR NLU (Command and Q&A) ---
+        async function callGeminiAPI(prompt, systemInstruction) {
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            type: { 
+                                type: "STRING", 
+                                enum: ["COMMAND", "QUESTION"] 
+                            },
+                            actions: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        object: { type: "STRING", enum: ["cube", "ball", "cylinder"] },
+                                        action: { type: "STRING", enum: Object.keys(actions) },
+                                    },
+                                    required: ["object", "action"]
+                                }
+                            },
+                            query: { type: "STRING", description: "The user's question, if type is QUESTION." }
+                        },
+                        required: ["type"]
+                    }
+                }
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                const jsonText = result.candidates[0].content.parts[0].text;
+                return JSON.parse(jsonText);
+
+            } catch (error) {
+                console.error("Gemini API call failed:", error);
+                showOutput(`Error: Failed to process command via AI. Check console for details.`, 'error');
+                return null;
+            }
+        }
+        
+        async function getAnswerFromGemini(query, sceneContext) {
+            const qaSystemInstruction = `You are an intelligent 3D scene dynamic analysis engine. Answer the user's question concisely based ONLY on the provided SCENE CONTEXT.
+CONTEXT: ${sceneContext}
+RULES: 
+1. If the question asks what color an object 'was before', look in the history.
+2. If the question asks about future action (e.g., 'will it go up?'), answer based on general physics knowledge (e.g., jump means up, stop means velocity zero).
+3. If information is not available in the context (e.g., 'what color was the ball before it changed?' but no color change history exists), state that the information is not tracked or available.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: query }] }],
+                systemInstruction: { parts: [{ text: qaSystemInstruction }] },
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                return result.candidates[0].content.parts[0].text;
+            } catch (error) {
+                console.error("Gemini Q&A failed:", error);
+                return "Error: Could not retrieve an answer from the AI.";
+            }
+        }
+
+        // --- COMMAND EXECUTION ---
+        
+        async function handleInput() {
+            const input = commandInput.value.trim();
+            commandInput.value = ''; // Clear input immediately
+            if (!input) return;
+
+            showOutput(`<span class="text-blue-400">Processing:</span> "${input}"...`);
+
+            const geminiResponse = await callGeminiAPI(input, "Analyze the user's input and classify it as a COMMAND (for scene action) or a QUESTION (for scene analysis). Extract up to three distinct actions or the single question.");
+            
+            if (!geminiResponse) return;
+
+            if (geminiResponse.type === 'COMMAND') {
+                if (geminiResponse.actions && geminiResponse.actions.length > 0) {
+                    for (const action of geminiResponse.actions) {
+                        const { object: name, action: actionName } = action;
+                        const obj = objects[name];
+                        
+                        if (obj && actions[actionName]) {
+                            // FIX: Consistently pass mesh, body, and name to the action function
+                            actions[actionName](obj.mesh, obj.body, name); 
+                        } else {
+                            showOutput(`Error: Object '${name}' or Action '${actionName}' not recognized.`, 'error');
+                        }
+                    }
+                } else {
+                     showOutput(`AI Analysis: Command understood, but no valid action was extracted. Try rephrasing.`, 'error');
+                }
+            } else if (geminiResponse.type === 'QUESTION') {
+                const sceneContext = generateSceneContext();
+                const answer = await getAnswerFromGemini(geminiResponse.query, sceneContext);
+                showOutput(`<span class="text-green-400">AI Answer:</span> ${answer}`, 'success');
+            } else {
+                showOutput("AI Analysis: Could not classify input as Command or Question.", 'error');
+            }
+        }
+        
+        function generateSceneContext() {
+            let context = "CURRENT SCENE STATE:\n";
+            for (const name in objects) {
+                const obj = objects[name];
+                // Safely get color hex
+                const colorHex = obj.mesh.material ? obj.mesh.material.color.getHexString() : 'N/A';
+                const scale = obj.mesh.scale.x.toFixed(2);
+                const pos = obj.body.position;
+
+                context += `${name}: 
+- Color: #${colorHex}
+- Scale: ${scale}
+- Position: (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)})
+- History (${obj.history.length} events): ${JSON.stringify(obj.history.slice(-3))}\n`; // Last 3 events
+            }
+            context += "\nGENERAL PHYSICS: Jump adds upward velocity (positive Y). Stop sets velocity to zero.\n";
+            return context;
+        }
+
+        // --- SPEECH RECOGNITION IMPLEMENTATION ---
+        
+        // Function to display status messages temporarily for mic events
+        function showMicStatus(message, type = 'info') {
+            const statusBox = outputBox; // Use outputBox for mic status as well
+            let bgColor, textColor;
+            switch (type) {
+                case 'error':
+                    bgColor = 'bg-red-900/80';
+                    textColor = 'text-red-300';
+                    break;
+                case 'success':
+                    bgColor = 'bg-green-900/80';
+                    textColor = 'text-green-300';
+                    break;
+                case 'info':
+                default:
+                    bgColor = 'bg-blue-900/80';
+                    textColor = 'text-blue-300';
+                    break;
+            }
+
+            statusBox.className = statusBox.className.replace(/\s(bg-\w+-\d+|\btext-\w+-\d+)\b/g, '');
+            statusBox.innerHTML = message;
+            
+            // Note: We don't use opacity/fade transitions on the main output box for simplicity.
+        }
+
+        // Resets UI elements to the stopped state
+        function stopUI() {
+            isListening = false;
+            speechButton.title = 'Start Voice Command';
+            speechButton.classList.remove('listening', 'bg-red-600', 'hover:bg-red-700');
+            speechButton.classList.add('bg-purple-600', 'hover:bg-purple-700');
+            micAndExecuteGroup.classList.remove('border-red-500', 'border-4');
+            micAndExecuteGroup.classList.add('border-transparent', 'border-0');
+        }
+        
+        // Starts recognition safely
+        function startRecognition() {
+             if (!recognition) return;
+             if (isListening) return; // CRITICAL FIX: Prevent starting if already active
+
+             try {
+                recognition.start();
+             } catch (e) {
+                console.warn("Recognition start failed (already started or error):", e.message);
+                // If we hit InvalidStateError here, it means the state check missed something, 
+                // but console.warn is sufficient as the state check above should handle the common case.
+             }
+        }
+        
+        function initializeRecognition() {
+            if (!SpeechRecognition) {
+                showOutput("Error: Your browser doesn't support the Web Speech API. Please use Chrome or Edge for voice.", 'error');
+                speechButton.disabled = true;
+                speechButton.classList.add('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = true;
+
+            recognition.onstart = () => {
+                isListening = true;
+                speechButton.title = 'Listening... Click to Stop';
+                speechButton.classList.add('listening', 'bg-red-600', 'text-white', 'hover:bg-red-700');
+                speechButton.classList.remove('bg-purple-600', 'text-white', 'hover:bg-purple-700');
+                micAndExecuteGroup.classList.add('border-red-500', 'border-4');
+                micAndExecuteGroup.classList.remove('border-transparent', 'border-0');
+                commandInput.value = ''; // Clear input on new command
+                commandInput.focus();
+                showMicStatus("Microphone activated. Start speaking.", 'info');
+            };
+
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Display interim results for smooth typing feedback
+                commandInput.value = finalTranscript + interimTranscript;
+            };
+
+            recognition.onend = () => {
+                if (isListening) {
+                    stopUI();
+                    showMicStatus("Listening stopped. Executing command...", 'success');
+                    if (commandInput.value.trim().length > 0) {
+                        handleInput(); // Automatically execute command after speaking stops
+                    }
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                
+                if (event.error === 'network') {
+                    // Do NOT call stopUI() immediately; keep the "listening" indicator active
+                    // while attempting a transparent restart for network errors.
+                    const errorMessage = "Network error occurred. Attempting to restart...";
+                    showMicStatus(errorMessage, 'error');
+                    setTimeout(() => {
+                        if (isListening) {
+                           startRecognition(); // Try restarting after 500ms
+                        }
+                    }, 500); 
+                    return; 
+                }
+                
+                // For all other fatal errors (not-allowed, no-speech, etc.), stop the UI
+                stopUI(); 
+                let errorMessage = "An unknown error occurred.";
+
+                if (event.error === 'not-allowed') {
+                    errorMessage = "Microphone access denied. Please check your browser permissions.";
+                } else if (event.error === 'no-speech') {
+                    errorMessage = "No speech detected. Please speak clearly.";
+                }
+                
+                showMicStatus(errorMessage, 'error');
+            };
+        }
+
+        // --- THREE.JS AND CANNON.JS SCENE SETUP ---
+        
+        function createCheckerboardTexture(size = 10, divisions = 8) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size * divisions;
+            canvas.height = size * divisions;
+            const context = canvas.getContext('2d');
+            
+            const color1 = '#303030';
+            const color2 = '#404040';
+            
+            const squareSize = size;
+
+            for (let i = 0; i < divisions; i++) {
+                for (let j = 0; j < divisions; j++) {
+                    context.fillStyle = (i + j) % 2 === 0 ? color1 : color2;
+                    context.fillRect(i * squareSize, j * squareSize, squareSize, squareSize);
+                }
+            }
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(50 / divisions, 50 / divisions); // Repeat across a 50x50 area
+            return texture;
+        }
+
+        function createWallLabel(text, position) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 64;
+            
+            context.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            context.fillRect(0, 0, 256, 64);
+            
+            context.fillStyle = 'white';
+            context.font = 'bold 48px Inter';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, 128, 32);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(4, 1, 1);
+            sprite.position.copy(position);
+            sprite.position.y += 2; // Position above the wall
+            scene.add(sprite);
+        }
+
+        function init3DAndPhysics() {
+            // --- SCENE & RENDERER ---
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a1a);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            canvasContainer.appendChild(renderer.domElement);
+
+            // --- CAMERA & CONTROLS ---
+            camera = new THREE.PerspectiveCamera(60, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
+            camera.position.set(0, 10, 15);
+            camera.lookAt(0, 0, 0);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.minDistance = 5;
+            controls.maxDistance = 50;
+            controls.maxPolarAngle = Math.PI / 2.1; // Limit angle to prevent going under floor
+
+            // --- PHYSICS WORLD (Cannon.js) ---
+            world = new CANNON.World();
+            world.gravity.set(0, -9.82, 0);
+            world.broadphase = new CANNON.NaiveBroadphase();
+            world.solver.iterations = 10;
+            
+            // --- MATERIALS ---
+            const groundMaterial = new CANNON.Material("groundMaterial");
+            const wallMaterial = new CANNON.Material("wallMaterial");
+            const defaultContactMaterial = new CANNON.ContactMaterial(groundMaterial, wallMaterial, {
+                friction: 0.4,
+                restitution: 0.3
+            });
+            world.addContactMaterial(defaultContactMaterial);
+
+            // --- LIGHTING ---
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 5);
+            directionalLight.position.set(10, 20, 10);
+            directionalLight.target.position.set(0, 0, 0);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 50;
+            directionalLight.shadow.camera.left = -20;
+            directionalLight.shadow.camera.right = 20;
+            directionalLight.shadow.camera.top = 20;
+            directionalLight.shadow.camera.bottom = -20;
+            scene.add(directionalLight);
+            scene.add(directionalLight.target);
+
+            // --- GROUND (Floor) ---
+            const floorWidth = 20;
+            const floorHeight = 0.1;
+
+            // Three.js Mesh
+            const checkerTexture = createCheckerboardTexture();
+            const floorMesh = new THREE.Mesh(
+                new THREE.BoxGeometry(floorWidth, floorHeight, floorWidth),
+                new THREE.MeshPhongMaterial({ map: checkerTexture })
+            );
+            floorMesh.receiveShadow = true;
+            floorMesh.position.y = -floorHeight / 2;
+            scene.add(floorMesh);
+
+            // Cannon.js Body
+            const floorShape = new CANNON.Box(new CANNON.Vec3(floorWidth / 2, floorHeight / 2, floorWidth / 2));
+            const floorBody = new CANNON.Body({ mass: 0, shape: floorShape, material: groundMaterial });
+            floorBody.position.copy(floorMesh.position);
+            world.addBody(floorBody);
+
+            // --- WALLS (Transparent Boundaries) ---
+            const wallHeight = 5;
+            const wallThickness = 0.2;
+            const wallSize = new CANNON.Vec3(floorWidth / 2, wallHeight / 2, wallThickness / 2);
+            const wallGeometry = new THREE.BoxGeometry(floorWidth, wallHeight, wallThickness);
+            const wallMaterialThree = new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.1 });
+            
+            const wallPositions = [
+                { x: floorWidth / 2, z: 0, rotY: Math.PI / 2, labelPos: new THREE.Vector3(floorWidth / 2 + 0.5, 0, 0), label: 'Wall 1' },
+                { x: -floorWidth / 2, z: 0, rotY: Math.PI / 2, labelPos: new THREE.Vector3(-floorWidth / 2 - 0.5, 0, 0), label: 'Wall 2' },
+                { x: 0, z: floorWidth / 2, rotY: 0, labelPos: new THREE.Vector3(0, 0, floorWidth / 2 + 0.5), label: 'Wall 3' },
+                { x: 0, z: -floorWidth / 2, rotY: 0, labelPos: new THREE.Vector3(0, 0, -floorWidth / 2 - 0.5), label: 'Wall 4' }
+            ];
+
+            wallPositions.forEach((posData, index) => {
+                const wallMesh = new THREE.Mesh(wallGeometry, wallMaterialThree);
+                wallMesh.position.set(posData.x, wallHeight / 2, posData.z);
+                wallMesh.rotation.y = posData.rotY;
+                scene.add(wallMesh);
+
+                const wallShape = new CANNON.Box(index % 2 === 0 ? wallSize : new CANNON.Vec3(wallThickness / 2, wallHeight / 2, floorWidth / 2));
+                const wallBody = new CANNON.Body({ mass: 0, shape: wallShape, material: wallMaterial });
+                wallBody.position.set(posData.x, wallHeight / 2, posData.z);
+                wallBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), posData.rotY);
+                world.addBody(wallBody);
+                
+                // Add label
+                createWallLabel(posData.label, posData.labelPos);
+            });
+            
+            // --- OBJECTS ---
+            createObject('cube', new THREE.BoxGeometry(1, 1, 1), 0x00ffff, initialPositions.cube, 1, 1);
+            createObject('ball', new THREE.SphereGeometry(0.5, 32, 32), 0xffff00, initialPositions.ball, 0.5, 1);
+            createObject('cylinder', new THREE.CylinderGeometry(0.5, 0.5, 2, 32), 0xff00ff, initialPositions.cylinder, 2, 1);
+            
+            resetObjects(); // Ensure objects are placed correctly on startup
+        }
+        
+        function createObject(name, geometry, color, position, halfExtents, scale = 1) {
+            // Three.js Mesh
+            const mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: color, shininess: 100 }));
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.position.copy(position);
+            mesh.name = name;
+            scene.add(mesh);
+
+            // Cannon.js Body
+            let shape;
+            if (name === 'cube') {
+                shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+            } else if (name === 'ball') {
+                shape = new CANNON.Sphere(0.5);
+            } else if (name === 'cylinder') {
+                shape = new CANNON.Cylinder(0.5, 0.5, 2, 32);
+            } else {
+                return;
+            }
+
+            const body = new CANNON.Body({ mass: 5, shape: shape });
+            body.position.copy(position);
+            world.addBody(body);
+
+            // Store references
+            objects[name] = {
+                mesh,
+                body,
+                initialPosition: position,
+                initialColor: color,
+                initialScale: scale,
+                currentScale: scale,
+                history: []
+            };
+        }
+
+        function resetObjects() {
+            for (const name in objects) {
+                const obj = objects[name];
+                
+                // Reset Physics
+                obj.body.position.copy(obj.initialPosition);
+                obj.body.quaternion.set(0, 0, 0, 1);
+                obj.body.velocity.set(0, 0, 0);
+                obj.body.angularVelocity.set(0, 0, 0);
+
+                // Reset Visuals
+                obj.mesh.position.copy(obj.initialPosition);
+                obj.mesh.quaternion.set(0, 0, 0, 1);
+                obj.mesh.material.color.set(obj.initialColor);
+                obj.mesh.scale.set(obj.initialScale, obj.initialScale, obj.initialScale);
+                obj.currentScale = obj.initialScale;
+                
+                // Reset History
+                obj.history = [{ action: 'reset', time: Date.now(), initialColor: obj.initialColor }];
+            }
+            showOutput('Objects reset to initial state.');
+        }
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update physics world
+            world.step(timeStep);
+
+            // Synchronize Three.js with Cannon.js
+            for (const name in objects) {
+                const obj = objects[name];
+                obj.mesh.position.copy(obj.body.position);
+                obj.mesh.quaternion.copy(obj.body.quaternion);
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            if (camera && renderer) {
+                camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            }
+        }
+
+
+        // --- EVENT LISTENERS ---
+        
+        // Voice Button
+        speechButton.addEventListener('click', () => {
+            if (!recognition) return;
+
+            if (isListening) {
+                recognition.stop();
+                stopUI();
+            } else {
+                startRecognition();
+            }
+        });
+        
+        // Execute Button
+        executeButton.addEventListener('click', handleInput);
+
+        // Enter key in input field
+        commandInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleInput();
+            }
+        });
+        
+        // Reset Button
+        resetButton.addEventListener('click', resetObjects);
+
+        // Instructions Button
+        instructionsButton.addEventListener('click', () => {
+            instructionsBox.classList.toggle('hidden');
+        });
+        
+        // Window Resize
+        window.addEventListener('resize', onWindowResize);
+
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            // 3D & Physics Initialization
+            init3DAndPhysics();
+            animate();
+
+            // Speech Recognition Initialization
+            initializeRecognition();
+            
+            // Set initial button styling (using purple theme)
+            speechButton.classList.add('bg-purple-600', 'text-white', 'hover:bg-purple-700');
+            executeButton.classList.add('bg-green-600', 'text-white', 'hover:bg-green-700');
+        };
+
+    </script>
+</body>
+</html>
